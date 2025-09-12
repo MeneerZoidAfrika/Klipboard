@@ -1,27 +1,21 @@
 ﻿@model KlipboardAssessment.Models.Transaction
-
-@{
-    Layout = null;
-}
-
 <!DOCTYPE html>
 
-<html>
-<head>
-    <meta name="viewport" content="width=device-width" />
-    <title>Create</title>
-</head>
-<body>
-
-<h4>Transaction</h4>
+<h4>Add a New Transaction</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Create">
+        <form asp-controller="Transactions" asp-action="AddTransaction" method="post">
+            @* <div class="hidden" asp-for="CustomerId"></div> *@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="AccountNumber" class="control-label"></label>
-                <input asp-for="AccountNumber" class="form-control" />
+                <label asp-for="AccountNumber" class="control-label">Select Account</label>
+                <select class="form-control">
+                    @foreach(var acc in ViewBag.AccountNumbers)
+                    {
+                        <option value="@acc">@acc</option>
+					}
+                </select>
                 <span asp-validation-for="AccountNumber" class="text-danger"></span>
             </div>
             <div class="form-group">
@@ -41,13 +35,16 @@
             </div>
             <div class="form-group">
                 <label asp-for="Type" class="control-label"></label>
-                <input asp-for="Type" class="form-control" />
+                <select class="form-control">
+                    <option value="Credit">C</option>
+					<option value="Debit">D</option>
+				</select>
                 <span asp-validation-for="Type" class="text-danger"></span>
             </div>
-            <div class="form-group">
+            @* <div class="form-group">
                 <label asp-for="CustomerId" class="control-label"></label>
                 <select asp-for="CustomerId" class ="form-control" asp-items="ViewBag.CustomerId"></select>
-            </div>
+            </div> *@
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
             </div>
@@ -62,5 +59,3 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-</body>
-</html>

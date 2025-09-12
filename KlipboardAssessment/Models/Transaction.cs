@@ -15,7 +15,7 @@ namespace KlipboardAssessment.Models
         public required decimal Amount { get; set; }
 
         [MaxLength(1)]
-        public required char Type { get; set; } // Debit or Credit
+        public required string Type { get; set; } // Debit or Credit
         public int CustomerId { get; set; } //FK from Customer
     }
 }

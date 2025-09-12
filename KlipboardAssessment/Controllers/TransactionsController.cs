@@ -29,34 +29,19 @@ namespace KlipboardAssessment.Controllers
             return View(await _context.Transactions.ToListAsync());
         }
 
-        // GET: Transactions/Details/5
-        public async Task<IActionResult> Details(int? id)
+        // GET: Transactions/AddTransaction
+        public async Task<IActionResult> AddTransaction()
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            ViewBag.AccountNumbers = await _context.Customers.Select(customer => customer.AccountNumber)
+                .ToListAsync();
 
-            var transaction = await _context.Transactions
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (transaction == null)
-            {
-                return NotFound();
-            }
-
-            return View(transaction);
-        }
-
-        // GET: Transactions/Create
-        public IActionResult AddTransaction()
-        {
             return View();
         }
 
-        // POST: Transactions/Create
+        // POST: Transactions/AddTransaction
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,AccountNumber,Date,Reference,Amount,Type,CustomerId")] Transaction transaction)
+        public async Task<IActionResult> AddTransaction( Transaction transaction)
         {
             if (ModelState.IsValid)
             {
@@ -64,6 +49,8 @@ namespace KlipboardAssessment.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
+            ViewBag.AccountNumbers = _context.Customers.Select(c => c.AccountNumber).ToList();
             return View(transaction);
         }
 
