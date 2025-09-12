@@ -6,11 +6,13 @@
 <div class="row">
     <div class="col-md-4">
         <form asp-controller="Transactions" asp-action="AddTransaction" method="post">
-            @* <div class="hidden" asp-for="CustomerId"></div> *@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <input type="hidden" asp-for="CustomerId" />
+
             <div class="form-group">
                 <label asp-for="AccountNumber" class="control-label">Select Account</label>
-                <select class="form-control">
+                <select asp-for="AccountNumber" class="form-control">
                     @foreach(var acc in ViewBag.AccountNumbers)
                     {
                         <option value="@acc">@acc</option>
@@ -20,7 +22,7 @@
             </div>
             <div class="form-group">
                 <label asp-for="Date" class="control-label"></label>
-                <input asp-for="Date" class="form-control" />
+                <input asp-for="Date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 <span asp-validation-for="Date" class="text-danger"></span>
             </div>
             <div class="form-group">
@@ -35,9 +37,9 @@
             </div>
             <div class="form-group">
                 <label asp-for="Type" class="control-label"></label>
-                <select class="form-control">
-                    <option value="Credit">C</option>
-					<option value="Debit">D</option>
+                <select asp-for="Type" class="form-control">
+                    <option value="C">C</option>
+					<option value="D">D</option>
 				</select>
                 <span asp-validation-for="Type" class="text-danger"></span>
             </div>

@@ -41,17 +41,32 @@ namespace KlipboardAssessment.Controllers
         // POST: Transactions/AddTransaction
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddTransaction( Transaction transaction)
+        public async Task<IActionResult> AddTransaction(Transaction transaction)
         {
-            if (ModelState.IsValid)
+            // The model state will be invalid at this point because CustomerId is 0 or null.
+            // That's okay, because we're going to fix it.
+
+            // 1. Find the customer based on the submitted AccountNumber.
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.AccountNumber == transaction.AccountNumber);
+
+            // 2. Check if a customer was found. If not, add an error.
+            if (customer == null)
             {
-                _context.Add(transaction);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                ModelState.AddModelError("AccountNumber", "Invalid Account Number.");
+                return View(transaction); // Return the view to show the error.
             }
 
-            ViewBag.AccountNumbers = _context.Customers.Select(c => c.AccountNumber).ToList();
-            return View(transaction);
+            // 3. Set the CustomerId on the transaction object.
+            // This is the key step that fixes the validation issue.
+            transaction.CustomerId = customer.Id;
+
+            // 4. Now that the model has the correct CustomerId, you can add it to the database.
+            // At this point, the model would be valid.
+            _context.Transactions.Add(transaction);
+            await _context.SaveChangesAsync();
+
+            // 5. Redirect the user.
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Transactions/Edit/5

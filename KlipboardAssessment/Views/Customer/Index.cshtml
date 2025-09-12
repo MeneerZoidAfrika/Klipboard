@@ -54,7 +54,8 @@
 				<td>@customer.Name</td>
                 <td>@customer.Balance</td>
                 <td>
-                    <a class="btn btn-info" asp-action="Index" asp-controller="Transactions">Transactions</a>
+                    @* Transactions *@
+                    <a class="btn btn-info" asp-action="Index" asp-route-id="@customer.Id" asp-controller="Transactions">Transactions</a>
                 </td>
                 <td>
                     @* GET REQUEST *@

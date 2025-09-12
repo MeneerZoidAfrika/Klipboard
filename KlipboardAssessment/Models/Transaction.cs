@@ -17,5 +17,6 @@ namespace KlipboardAssessment.Models
         [MaxLength(1)]
         public required string Type { get; set; } // Debit or Credit
         public int CustomerId { get; set; } //FK from Customer
+        public Customer? Customer { get; set; } // Navigation property
     }
 }
