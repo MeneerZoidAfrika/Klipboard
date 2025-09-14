@@ -17,16 +17,33 @@ namespace KlipboardAssessment.Controllers
         }
 
         // GET: Transactions
-        public async Task<IActionResult> Index(int id)
+        [HttpGet]
+        public async Task<IActionResult> Index(int? id)
         {
-            if (id == null) return NotFound();
+            if (id == null) return View(await _context.Transactions.ToListAsync());
 
             // Getting the current customer's Transactions
             // (Where TransactionId == CustomerId)
-            var customer = await _context.Transactions.Where(transaction => transaction.CustomerId == id)
+            var customerData = await _context.Transactions.Where(transaction => transaction.CustomerId == id)
                 .ToListAsync();
 
-            return View(await _context.Transactions.ToListAsync());
+            var customerName = await _context.Customers.Where(c => c.Id == id).Select(c => c.Name).FirstOrDefaultAsync();
+            ViewBag.CustomerName = customerName;
+
+            // Getting the Customer's total Balance
+            var debitTotal = await _context.Transactions
+                .Where(t => t.CustomerId == id && t.Type == "D")
+                .SumAsync(t => (decimal?)t.Amount) ?? 0;
+            var creditTotal = await _context.Transactions
+                .Where(t => t.CustomerId == id && t.Type == "C")
+                .SumAsync(t => (decimal?)t.Amount) ?? 0;    
+            var customerBalance = debitTotal - creditTotal; 
+            ViewBag.CustomerBalance = customerBalance;
+
+            // ViewBag Balance class to show Red / Green for their total oustanding
+            ViewBag.BalanceClass = customerBalance < 0 ? "danger" : "success";
+
+            return View(customerData);
         }
 
         // GET: Transactions/AddTransaction
@@ -86,8 +103,6 @@ namespace KlipboardAssessment.Controllers
         }
 
         // POST: Transactions/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,AccountNumber,Date,Reference,Amount,Type,CustomerId")] Transaction transaction)
