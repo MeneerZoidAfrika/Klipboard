@@ -1,73 +1,74 @@
 ﻿@model IEnumerable<KlipboardAssessment.Models.Transaction>
 
-<div class="text-center">
+<div class="container text-center">
     @if (ViewBag.CustomerName != null)
     {
         <h1>Transactions for @ViewBag.CustomerName</h1>
+        <h4 class="text-@ViewBag.BalanceClass">
+            Balance: @ViewBag.CustomerBalance
+        </h4>
     }
     else
     {
         <h1>All Transactions</h1>
     }
 
-    <p>
-        <a class="text-center btn btn-primary"
-           asp-controller="Transactions"
-           asp-action="AddTransaction">Add Transaction</a>
-    </p>
-</div>
+    <form asp-action="Index" method="get" class="mb-3">
+        <input type="hidden" name="id" value="@ViewBag.CustomerId" />
 
-<div class="d-flex justify-content-end mb-2">
-    <span class="badge bg-@ViewBag.BalanceClass p-3 fs-5">
-        Balance: @ViewBag.CustomerBalance
-    </span>
-</div>
+        <div class="input-group mb-3">
+            <input type="text" name="searchQuery" class="form-control"
+                   placeholder="Search by Reference or Account Number..."
+                   value="@ViewBag.SearchQuery" />
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </div>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.AccountNumber)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Date)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Reference)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Amount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Type)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-    @foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.AccountNumber)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Date)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Reference)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Amount)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Type)
-            </td>
-            <td>
-                <a class="btn btn-primary" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
-                <a class="btn btn-success" asp-action="Details" asp-route-id="@item.Id">Details</a>
-                <a class="btn btn-danger" asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+        <div class="form-group d-flex justify-content-center gap-3">
+            <div>
+                <label for="sortField">Sort By:</label>
+                <select name="sortField" id="sortField" class="form-control" onchange="this.form.submit()">
+                    <option value="Date" selected="@(ViewBag.SortField == "Date")">Date</option>
+                    <option value="Amount" selected="@(ViewBag.SortField == "Amount")">Amount</option>
+                    <option value="Type" selected="@(ViewBag.SortField == "Type")">Type</option>
+                </select>
+            </div>
+            <div>
+                <label for="sortOrder">Order:</label>
+                <select name="sortOrder" id="sortOrder" class="form-control" onchange="this.form.submit()">
+                    <option value="Asc" selected="@(ViewBag.SortOrder == "Asc")">Ascending</option>
+                    <option value="Desc" selected="@(ViewBag.SortOrder == "Desc")">Descending</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>@Html.DisplayNameFor(m => m.First().AccountNumber)</th>
+                <th>@Html.DisplayNameFor(m => m.First().Date)</th>
+                <th>@Html.DisplayNameFor(m => m.First().Reference)</th>
+                <th>@Html.DisplayNameFor(m => m.First().Amount)</th>
+                <th>@Html.DisplayNameFor(m => m.First().Type)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.AccountNumber</td>
+                    <td>@item.Date.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Reference</td>
+                    <td>@item.Amount</td>
+                    <td>@item.Type</td>
+                    <td>
+                        <a class="btn btn-primary btn-sm" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                        <a class="btn btn-success btn-sm" asp-action="Details" asp-route-id="@item.Id">Details</a>
+                        <a class="btn btn-danger btn-sm" asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

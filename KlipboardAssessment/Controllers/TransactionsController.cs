@@ -18,32 +18,70 @@ namespace KlipboardAssessment.Controllers
 
         // GET: Transactions
         [HttpGet]
-        public async Task<IActionResult> Index(int? id)
+        public async Task<IActionResult> Index(int? id, string searchQuery, string sortField, string sortOrder)
         {
-            if (id == null) return View(await _context.Transactions.ToListAsync());
+            // Start with all transactions or filter by customer
+            var transactionsQuery = _context.Transactions.AsQueryable();
 
-            // Getting the current customer's Transactions
-            // (Where TransactionId == CustomerId)
-            var customerData = await _context.Transactions.Where(transaction => transaction.CustomerId == id)
-                .ToListAsync();
+            if (id != null)
+            {
+                transactionsQuery = transactionsQuery.Where(t => t.CustomerId == id);
 
-            var customerName = await _context.Customers.Where(c => c.Id == id).Select(c => c.Name).FirstOrDefaultAsync();
-            ViewBag.CustomerName = customerName;
+                // Also pass customer name + balance to ViewBag
+                var customerName = await _context.Customers
+                    .Where(c => c.Id == id)
+                    .Select(c => c.Name)
+                    .FirstOrDefaultAsync();
+                ViewBag.CustomerName = customerName;
 
-            // Getting the Customer's total Balance
-            var debitTotal = await _context.Transactions
-                .Where(t => t.CustomerId == id && t.Type == "D")
-                .SumAsync(t => (decimal?)t.Amount) ?? 0;
-            var creditTotal = await _context.Transactions
-                .Where(t => t.CustomerId == id && t.Type == "C")
-                .SumAsync(t => (decimal?)t.Amount) ?? 0;    
-            var customerBalance = debitTotal - creditTotal; 
-            ViewBag.CustomerBalance = customerBalance;
+                var debitTotal = await _context.Transactions
+                    .Where(t => t.CustomerId == id && t.Type == "D")
+                    .SumAsync(t => (decimal?)t.Amount) ?? 0;
+                var creditTotal = await _context.Transactions
+                    .Where(t => t.CustomerId == id && t.Type == "C")
+                    .SumAsync(t => (decimal?)t.Amount) ?? 0;
+                var customerBalance = debitTotal - creditTotal;
 
-            // ViewBag Balance class to show Red / Green for their total oustanding
-            ViewBag.BalanceClass = customerBalance < 0 ? "danger" : "success";
+                ViewBag.CustomerBalance = customerBalance;
+                ViewBag.BalanceClass = customerBalance < 0 ? "danger" : "success";
+            }
 
-            return View(customerData);
+            // Search by reference or account number
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                transactionsQuery = transactionsQuery.Where(t =>
+                    t.Reference.Contains(searchQuery) ||
+                    t.AccountNumber.Contains(searchQuery));
+            }
+
+            // Sorting
+            if (!string.IsNullOrEmpty(sortField) && !string.IsNullOrEmpty(sortOrder))
+            {
+                transactionsQuery = (sortField, sortOrder.ToLower()) switch
+                {
+                    ("Date", "asc") => transactionsQuery.OrderBy(t => t.Date),
+                    ("Date", "desc") => transactionsQuery.OrderByDescending(t => t.Date),
+                    ("Amount", "asc") => transactionsQuery.OrderBy(t => t.Amount),
+                    ("Amount", "desc") => transactionsQuery.OrderByDescending(t => t.Amount),
+                    ("Type", "asc") => transactionsQuery.OrderBy(t => t.Type),
+                    ("Type", "desc") => transactionsQuery.OrderByDescending(t => t.Type),
+                    _ => transactionsQuery
+                };
+            }
+            else
+            {
+                // Default sort: by Date (descending = newest first)
+                transactionsQuery = transactionsQuery.OrderByDescending(t => t.Date);
+            }
+
+            var transactionData = await transactionsQuery.ToListAsync();
+
+            ViewBag.SearchQuery = searchQuery;
+            ViewBag.SortField = sortField;
+            ViewBag.SortOrder = sortOrder;
+            ViewBag.CustomerId = id;
+
+            return View(transactionData);
         }
 
         // GET: Transactions/AddTransaction
@@ -77,13 +115,25 @@ namespace KlipboardAssessment.Controllers
             // This is the key step that fixes the validation issue.
             transaction.CustomerId = customer.Id;
 
+            // 3.1. Update the customer's balance based on transaction type.
+            if (transaction.Type == "D") // Debit
+            {
+                customer.Balance -= transaction.Amount;
+            }
+            else if (transaction.Type == "C") // Credit
+            {
+                customer.Balance += transaction.Amount;
+            }
+
             // 4. Now that the model has the correct CustomerId, you can add it to the database.
             // At this point, the model would be valid.
             _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
 
             // 5. Redirect the user.
-            return RedirectToAction(nameof(Index));
+            //return RedirectToAction(nameof(Index(customer.Id)));
+            return RedirectToAction("Index", new { id = customer.Id });
+
         }
 
         // GET: Transactions/Edit/5
