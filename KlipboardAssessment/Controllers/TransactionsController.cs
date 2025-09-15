@@ -1,6 +1,7 @@
 ﻿using KlipboardAssessment.Data;
 using KlipboardAssessment.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace KlipboardAssessment.Controllers
@@ -84,56 +85,130 @@ namespace KlipboardAssessment.Controllers
             return View(transactionData);
         }
 
-        // GET: Transactions/AddTransaction
+        private async Task PopulateDropdownsAsync()
+        {
+            // Accounts
+            var accounts = await _context.Customers
+                .Select(c => c.AccountNumber)
+                .ToListAsync();
+            ViewBag.AccountNumbers = new SelectList(accounts);
+
+            // Transaction types
+            ViewBag.TransactionTypes = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "C", Text = "C" },
+                new SelectListItem { Value = "D", Text = "D" }
+            };
+        }
+
+        // Example: inside AddTransaction GET
+        [HttpGet]
         public async Task<IActionResult> AddTransaction()
         {
-            ViewBag.AccountNumbers = await _context.Customers.Select(customer => customer.AccountNumber)
-                .ToListAsync();
+            await PopulateDropdownsAsync();
 
-            return View();
+            //var accounts = _context.Customers
+            //    .Select(c => c.AccountNumber)
+            //    .ToList();
+
+            //// FIX: wrap into a SelectList
+            //ViewBag.AccountNumbers = new SelectList(accounts);
+
+            // If you're using a ViewModel
+            var model = new TransactionBatchViewModel
+            {
+                Transactions = new List<Transaction> { new Transaction() }
+            };
+
+            return View(model);
         }
 
         // POST: Transactions/AddTransaction
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddTransaction(Transaction transaction)
+        public async Task<IActionResult> AddTransaction(TransactionBatchViewModel model)
         {
-            // The model state will be invalid at this point because CustomerId is 0 or null.
-            // That's okay, because we're going to fix it.
+            await PopulateDropdownsAsync();
 
-            // 1. Find the customer based on the submitted AccountNumber.
-            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.AccountNumber == transaction.AccountNumber);
-
-            // 2. Check if a customer was found. If not, add an error.
-            if (customer == null)
+            if (model?.Transactions == null || !model.Transactions.Any())
             {
-                ModelState.AddModelError("AccountNumber", "Invalid Account Number.");
-                return View(transaction); // Return the view to show the error.
+                ModelState.AddModelError("", "No transactions to save.");
+                return View(model);
             }
 
-            // 3. Set the CustomerId on the transaction object.
-            // This is the key step that fixes the validation issue.
-            transaction.CustomerId = customer.Id;
-
-            // 3.1. Update the customer's balance based on transaction type.
-            if (transaction.Type == "D") // Debit
+            var savedCustomerIds = new HashSet<int>();
+            // iterate with index so we can add model errors to specific rows
+            for (int i = 0; i < model.Transactions.Count; i++)
             {
-                customer.Balance -= transaction.Amount;
+                var tx = model.Transactions[i];
+
+                // skip fully empty rows (user added but didn't fill)
+                var isEmpty = string.IsNullOrWhiteSpace(tx.AccountNumber)
+                              && string.IsNullOrWhiteSpace(tx.Reference)
+                              && (tx.Amount == 0 || tx.Amount == default);
+                if (isEmpty) continue;
+
+                // basic per-row validation (you can rely on DataAnnotations too)
+                if (string.IsNullOrWhiteSpace(tx.AccountNumber))
+                {
+                    ModelState.AddModelError($"Transactions[{i}].AccountNumber", "Account number is required.");
+                    continue;
+                }
+
+                if (tx.Amount <= 0)
+                {
+                    ModelState.AddModelError($"Transactions[{i}].Amount", "Amount must be greater than 0.");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(tx.Type) || (tx.Type != "C" && tx.Type != "D"))
+                {
+                    ModelState.AddModelError($"Transactions[{i}].Type", "Type must be C or D.");
+                    continue;
+                }
+
+                // resolve customer
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.AccountNumber == tx.AccountNumber);
+
+                if (customer == null)
+                {
+                    ModelState.AddModelError($"Transactions[{i}].AccountNumber", "Invalid account number.");
+                    continue;
+                }
+
+                tx.CustomerId = customer.Id;
+
+                // adjust balance
+                if (tx.Type == "D")
+                    customer.Balance += tx.Amount;
+                else if (tx.Type == "C")
+                    customer.Balance -= tx.Amount;
+
+                _context.Transactions.Add(tx);
+                savedCustomerIds.Add(customer.Id);
             }
-            else if (transaction.Type == "C") // Credit
+
+            // If any validation errors were added, return the view so user can fix rows
+            if (!ModelState.IsValid)
             {
-                customer.Balance += transaction.Amount;
+                return View(model);
             }
 
-            // 4. Now that the model has the correct CustomerId, you can add it to the database.
-            // At this point, the model would be valid.
-            _context.Transactions.Add(transaction);
-            await _context.SaveChangesAsync();
+            if (savedCustomerIds.Count > 0)
+            {
+                await _context.SaveChangesAsync();
+            }
 
-            // 5. Redirect the user.
-            //return RedirectToAction(nameof(Index(customer.Id)));
-            return RedirectToAction("Index", new { id = customer.Id });
+            // Redirect: if only one customer was affected, show their transactions;
+            // otherwise go to all transactions.
+            if (savedCustomerIds.Count == 1)
+            {
+                var onlyId = savedCustomerIds.First();
+                return RedirectToAction("Index", new { id = onlyId });
+            }
 
+            return RedirectToAction("Index"); // All transactions
         }
 
         // GET: Transactions/Edit/5
@@ -185,23 +260,23 @@ namespace KlipboardAssessment.Controllers
             return View(transaction);
         }
 
-        // GET: Transactions/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+        //// GET: Transactions/Delete/5
+        //public async Task<IActionResult> Delete(int? id)
+        //{
+        //    if (id == null)
+        //    {
+        //        return NotFound();
+        //    }
 
-            var transaction = await _context.Transactions
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (transaction == null)
-            {
-                return NotFound();
-            }
+        //    var transaction = await _context.Transactions
+        //        .FirstOrDefaultAsync(m => m.Id == id);
+        //    if (transaction == null)
+        //    {
+        //        return NotFound();
+        //    }
 
-            return View(transaction);
-        }
+        //    return View(transaction);
+        //}
 
         // POST: Transactions/Delete/5
         [HttpPost, ActionName("Delete")]
