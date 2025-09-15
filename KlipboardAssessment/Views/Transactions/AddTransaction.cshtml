@@ -74,7 +74,7 @@
 
     <script>
         (function () {
-            // Start index at current number of rows (server rendered)
+            // Start index at current number of rows
             let index = @Model.Transactions.Count;
 
             const container = document.getElementById("transaction-forms");
@@ -85,14 +85,11 @@
                     const el = this.closest(".transaction-form");
                     if (!confirm("Remove this transaction row?")) return;
                     el.remove();
-                    // NOTE: We don't reindex names/ids after remove - ASP.NET will still bind arrays
-                    // if indexes are continuous. If you remove middle rows, indexes will be non-contiguous.
-                    // A more complex reindexing can be added if necessary.
                 });
             });
 
             document.getElementById("add-transaction").addEventListener("click", function () {
-                // Clone the first transaction-form as template (it uses index 0 names)
+                // Clone the first transaction-form as template
                 const first = container.querySelector(".transaction-form");
                 if (!first) return;
 
@@ -102,7 +99,6 @@
                 clone.querySelectorAll("[name]").forEach(el => {
                     // replace [0] with [index]
                     el.name = el.name.replace(/\[\d+\]/, "[" + index + "]");
-                    // ids are like Transactions_0__AccountNumber -> replace _0__ with _index__
                     if (el.id) el.id = el.id.replace(/_\d+__/ , "_" + index + "__");
                     // clear values
                     if (el.tagName.toLowerCase() === "select") {
@@ -132,7 +128,7 @@
                 index++;
             });
 
-            // If you want to confirm submission for safety:
+            // Confirm submission for safety:
             const saveBtn = document.getElementById("saveAll");
             saveBtn.addEventListener("click", function (e) {
                 if (!confirm("Are you sure you want to save the entered transaction(s)?")) {

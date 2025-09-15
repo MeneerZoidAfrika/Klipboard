@@ -17,7 +17,7 @@ namespace KlipboardAssessment.Controllers
             _logger = logger;
         }
 
-        // GET: Transactions
+        // GET: Transactions/
         [HttpGet]
         public async Task<IActionResult> Index(int? id, string searchQuery, string sortField, string sortOrder)
         {
@@ -101,18 +101,10 @@ namespace KlipboardAssessment.Controllers
             };
         }
 
-        // Example: inside AddTransaction GET
         [HttpGet]
         public async Task<IActionResult> AddTransaction()
         {
             await PopulateDropdownsAsync();
-
-            //var accounts = _context.Customers
-            //    .Select(c => c.AccountNumber)
-            //    .ToList();
-
-            //// FIX: wrap into a SelectList
-            //ViewBag.AccountNumbers = new SelectList(accounts);
 
             // If you're using a ViewModel
             var model = new TransactionBatchViewModel
@@ -137,7 +129,7 @@ namespace KlipboardAssessment.Controllers
             }
 
             var savedCustomerIds = new HashSet<int>();
-            // iterate with index so we can add model errors to specific rows
+            // add model errors to specific rows
             for (int i = 0; i < model.Transactions.Count; i++)
             {
                 var tx = model.Transactions[i];
@@ -148,7 +140,6 @@ namespace KlipboardAssessment.Controllers
                               && (tx.Amount == 0 || tx.Amount == default);
                 if (isEmpty) continue;
 
-                // basic per-row validation (you can rely on DataAnnotations too)
                 if (string.IsNullOrWhiteSpace(tx.AccountNumber))
                 {
                     ModelState.AddModelError($"Transactions[{i}].AccountNumber", "Account number is required.");
@@ -167,7 +158,7 @@ namespace KlipboardAssessment.Controllers
                     continue;
                 }
 
-                // resolve customer
+                // Get hold of customer obj
                 var customer = await _context.Customers
                     .FirstOrDefaultAsync(c => c.AccountNumber == tx.AccountNumber);
 
@@ -179,7 +170,7 @@ namespace KlipboardAssessment.Controllers
 
                 tx.CustomerId = customer.Id;
 
-                // adjust balance
+                // Adjust Customer Balance
                 if (tx.Type == "D")
                     customer.Balance += tx.Amount;
                 else if (tx.Type == "C")
@@ -189,7 +180,7 @@ namespace KlipboardAssessment.Controllers
                 savedCustomerIds.Add(customer.Id);
             }
 
-            // If any validation errors were added, return the view so user can fix rows
+            // If any validation errors were added, return the view so user can fix
             if (!ModelState.IsValid)
             {
                 return View(model);
@@ -200,8 +191,8 @@ namespace KlipboardAssessment.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            // Redirect: if only one customer was affected, show their transactions;
-            // otherwise go to all transactions.
+            // Iff only one customer was affected, goto THEIR transactions;
+            // otherwise go to ALL transactions.
             if (savedCustomerIds.Count == 1)
             {
                 var onlyId = savedCustomerIds.First();
@@ -259,24 +250,6 @@ namespace KlipboardAssessment.Controllers
             }
             return View(transaction);
         }
-
-        //// GET: Transactions/Delete/5
-        //public async Task<IActionResult> Delete(int? id)
-        //{
-        //    if (id == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    var transaction = await _context.Transactions
-        //        .FirstOrDefaultAsync(m => m.Id == id);
-        //    if (transaction == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    return View(transaction);
-        //}
 
         // POST: Transactions/Delete/5
         [HttpPost, ActionName("Delete")]

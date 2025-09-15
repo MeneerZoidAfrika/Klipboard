@@ -85,7 +85,7 @@ namespace KlipboardAssessment.Controllers
                 return RedirectToAction(nameof(Index)); // Safer to use nameof() in case of renaming  
             }
 
-            // The model was not valid, return with previously filled in values
+            // The model was NOT  valid, return with previously filled in values
             return View(customer);
         }
 

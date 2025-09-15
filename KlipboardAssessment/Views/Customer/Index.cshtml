@@ -85,7 +85,7 @@
 
 	deleteBtns.forEach(btn => btn.addEventListener("click", function(event) {
 		  if (!confirm("Are you sure you want to delete this customer?")) {
-			  event.preventDefault(); // Prevent the default action (navigation)
+			  event.preventDefault();
 		  }
 	  }));
 </script>
