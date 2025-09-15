@@ -15,6 +15,11 @@ project.lock.json
 *.userosscache
 *.sln.docstates
 
+# SQLite database and temp files
+*.db
+*.db-shm
+*.db-wal
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
