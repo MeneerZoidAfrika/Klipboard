@@ -106,7 +106,6 @@ namespace KlipboardAssessment.Controllers
         {
             await PopulateDropdownsAsync();
 
-            // If you're using a ViewModel
             var model = new TransactionBatchViewModel
             {
                 Transactions = new List<Transaction> { new Transaction() }

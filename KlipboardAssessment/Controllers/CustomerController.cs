@@ -38,8 +38,8 @@ namespace KlipboardAssessment.Controllers
                     ("Name", "desc") => customersQuery.OrderByDescending(c => c.Name),
                     ("AccountNumber", "asc") => customersQuery.OrderBy(c => c.AccountNumber),
                     ("AccountNumber", "desc") => customersQuery.OrderByDescending(c => c.AccountNumber),
-                    ("Balance", "asc") => customersQuery.OrderBy(c => c.Balance),
-                    ("Balance", "desc") => customersQuery.OrderByDescending(c => c.Balance),
+                    ("Balance", "asc") => customersQuery.OrderBy(c => (double)c.Balance),
+                    ("Balance", "desc") => customersQuery.OrderByDescending(c => (double)c.Balance),
                     _ => customersQuery
                 };
             }
